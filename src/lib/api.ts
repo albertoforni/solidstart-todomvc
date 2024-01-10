@@ -3,19 +3,25 @@
 import { Todo } from "~/types";
 
 function createStorage() {
-  const storage = new Map<string, any>([["todos:counter", 0], ["todos:data", []]]);
+  const storage = new Map<string, any>([
+    ["todos:counter", 0],
+    ["todos:data", []],
+  ]);
 
   return {
     getItem(key: string) {
       return storage.get(key);
     },
     getItems(keys: string[]) {
-      return keys.map((key) => storage.get(key));
+      return keys.map((key) => {
+        const value = storage.get(key);
+        return { value };
+      });
     },
     setItem(key: string, value: any) {
       storage.set(key, value);
       return Promise.resolve();
-    }
+    },
   };
 }
 
@@ -26,18 +32,16 @@ export async function getTodosFn() {
 }
 export async function addTodoFn(formData: FormData) {
   const title = formData.get("title") as string;
-  const [{ value: todos }, { value: index }] = await storage.getItems([
+  const [{ value: todos }, { value: index }] = storage.getItems([
     "todos:data",
     "todos:counter",
   ]);
 
-  await Promise.all([
-    storage.setItem("todos:data", [
-      ...(todos as Todo[]),
-      { id: index as number, title, completed: false },
-    ]),
-    storage.setItem("todos:counter", (index as number) + 1),
+  storage.setItem("todos:data", [
+    ...(todos as Todo[]),
+    { id: index as number, title, completed: false },
   ]);
+  storage.setItem("todos:counter", (index as number) + 1);
 }
 export async function removeTodoFn(id: number) {
   const todos = (await storage.getItem("todos:data")) as Todo[];
